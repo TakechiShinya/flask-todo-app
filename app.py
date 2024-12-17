@@ -143,4 +143,13 @@ def stop_weather():
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
 
+@app.route('/trigger-weather-notification', methods=['GET'])
+def trigger_weather_notification():
+    """手動で天気通知を送信"""
+    weather = get_weather_data()
+    forecast = get_forecast_data()
+    if weather and forecast:
+        send_line_notify(generate_weather_message(weather, forecast, 1))  # 1時間ごとの通知
+        return "Weather notification sent successfully!", 200
+    return "Failed to fetch weather data.", 500
 
