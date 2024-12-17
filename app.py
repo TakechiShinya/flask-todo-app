@@ -1,5 +1,3 @@
-from datetime import datetime
-import pytz
 from flask import Flask, render_template, request, redirect, url_for
 import requests
 import threading
@@ -8,7 +6,7 @@ import time
 app = Flask(__name__)
 
 API_KEY = '463b8318bfa98dfa964b8ee76162e9e2'
-CITY = 'Texas'
+CITY = 'Fukuoka'
 CURRENT_URL = f'http://api.openweathermap.org/data/2.5/weather?q={CITY}&appid={API_KEY}&lang=ja&units=metric'
 FORECAST_URL = f'http://api.openweathermap.org/data/2.5/forecast?q={CITY}&appid={API_KEY}&units=metric&lang=ja'
 LINE_TOKEN = 'mmlIXs9PvJ14qh63pSp7FHqauKfo38u9Ftiur00Q3VK'
@@ -27,42 +25,6 @@ def get_forecast_data():
     """天気予報（最大5日間、3時間ごとのデータ）を取得"""
     response = requests.get(FORECAST_URL)
     return response.json() if response.status_code == 200 else None
-def filter_forecast_data(forecast_data):
-    """現在時刻以降の最大8個の天気予報を取得"""
-    # 日本時間 (JST) を使用するために、UTCからJSTに変換
-    jst = pytz.timezone('Asia/Tokyo')
-    current_time = datetime.now(jst)  # 日本時間で取得
-    print("Current time:", current_time)  # 現在時刻を表示
-    
-    filtered_data = []
-
-    # 現在時刻以降の予報データをフィルタリング
-    for item in forecast_data['list']:
-        # 予報の時間を日本時間に変換
-        forecast_time = datetime.fromtimestamp(item['dt'], tz=pytz.utc).astimezone(jst)  # UTC -> JST
-        print("Forecast time:", forecast_time)  # 予報の時間を表示
-        
-        # 現在時刻より未来の予報データをフィルタリング
-        if forecast_time > current_time:
-            filtered_data.append(item)
-        
-        # 最大8つのデータを取得
-        if len(filtered_data) == 8:
-            break
-    
-    return filtered_data
-
-
-
-@app.route('/')
-def index():
-    current_weather = get_weather_data()
-    forecast = get_forecast_data()
-    
-    # 現在時刻以降の5つの予報を取得
-    forecast_filtered = filter_forecast_data(forecast) if forecast else []
-    
-    return render_template('index.html', current_weather=current_weather, forecast=forecast_filtered)
 
 def send_line_notify(message):
     payload = {'message': message}
@@ -90,7 +52,7 @@ def generate_weather_message(weather, forecast, interval):
     if "rain" in current_description.lower():
         forecast_message += "☔☔傘を忘れずに！\n"
     elif "cloud" in current_description.lower():
-        forecast_message += "☁今日は曇りです。過ごしやすい天気かもしれません。\n"
+        forecast_message += "今日は曇りです。過ごしやすい天気かもしれません。\n"
     elif "clear" in current_description.lower():
         forecast_message += "🌤いい天気です！外出に最適です。\n"
     else:
@@ -111,15 +73,19 @@ def generate_weather_message(weather, forecast, interval):
         description = forecast_data['weather'][0]['description']
         rain = forecast_data.get('rain', {}).get('3h', 0)
         pop = forecast_data.get('pop', 0) * 100  # 降水確率 (0-1を%に変換)
-        
-        forecast_message += f"{hour}時間後の天気: {description}, 気温: {temp}℃, 降雨量: {rain} mm/3h, 降水確率: {pop:.1f}%\n\n"
-        
-        # 降水確率が40％以上の場合の追加メッセージ
-        if pop >= 40:
-            forecast_message += "☔☔☔☔☔ 雨が予想されます。傘を持って外出してください！\n"
-    
+
+        # 基本情報
+        forecast_message += f"{hour}時間後の天気: {description}, 気温: {temp}℃, 降雨量: {rain} mm/3h, 降水確率: {pop:.1f}%\n"
+
+        # 降水確率40%以上の場合の追加メッセージ
+        if pop >= 0:
+            forecast_message += "🌧 降水確率が40%以上です。傘☔の準備をお忘れなく！\n"
+
     forecast_message += f"この通知は{interval}時間ごとに繰り返されます。"
     return forecast_message
+
+
+
 
 def start_hydration_notification():
     """水分補給通知を開始"""
@@ -151,6 +117,12 @@ def start_weather_notification(interval):
         if weather and forecast:
             send_line_notify(generate_weather_message(weather, forecast, interval))
 
+@app.route('/')
+def index():
+    current_weather = get_weather_data()
+    forecast = get_forecast_data()
+    return render_template('index.html', current_weather=current_weather, forecast=forecast)
+
 @app.route('/start-hydration-notification', methods=['POST'])
 def start_hydration():
     hydration_stop_event.clear()
@@ -177,4 +149,5 @@ def stop_weather():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 

@@ -131,24 +131,23 @@
                 style="max-width: 100%; height: auto;"
             >
             <p><strong>気温:</strong> {{ current_weather['main']['temp'] }}℃</p>
-            <p><strong>風速:</strong> {{ current_weather['wind']['speed'] }} m/s</p>
             <p><strong>降水量:</strong> {{ current_weather.get('rain', {}).get('1h', 0) }} mm/h</p>
         </div>
         
         
-      <!-- 天気予報を表示 -->
-<h2>福岡市の天気予報</h2>
-<div class="weather-container">
-    {% for item in forecast %}
-    <div class="weather-box">
-        <p><strong>時間:</strong> {{ item['dt_txt'] }}</p>
-        <p><strong>天気:</strong> {{ item['weather'][0]['description'] }}</p>
-        <p><strong>気温:</strong> {{ item['main']['temp'] }}℃</p>
-        <p><strong>降水量:</strong> {{ item.get('rain', {}).get('3h', 0) }} mm/3h</p>
-        <p><strong>降水確率:</strong> {{ item.get('pop', 0) * 100 | round(1) }}%</p>
-    </div>
-    {% endfor %}
-</div>
+        <!-- 天気予報を表示 -->
+        <h2>福岡市の天気予報（3時間ごと）</h2>
+        <div class="weather-container">
+            {% for item in forecast['list'][:10] %}
+            <div class="weather-box">
+                <p><strong>時間:</strong> {{ item['dt_txt'] }}</p>
+                <p><strong>天気:</strong> {{ item['weather'][0]['description'] }}</p>
+                <p><strong>気温:</strong> {{ item['main']['temp'] }}℃</p>
+                <p><strong>降水量:</strong> {{ item.get('rain', {}).get('3h', 0) }} mm/3h</p>
+                <p><strong>降水確率:</strong> {{ item.get('pop', 0) * 100 | round(1) }}%</p>
+            </div>
+            {% endfor %}
+        </div>
 
         <!-- 水分補給通知ボタン -->
         <h2>水分補給通知</h2>
@@ -176,3 +175,5 @@
     </main>
 </body>
 </html>
+
+
