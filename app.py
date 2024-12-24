@@ -78,7 +78,7 @@ def generate_weather_message(weather, forecast, interval):
         forecast_message += f"{hour}時間後の天気: {description}, 気温: {temp}℃, 降雨量: {rain} mm/3h, 降水確率: {pop:.1f}%\n"
 
         # 降水確率40%以上の場合の追加メッセージ
-        if pop >= 0:
+        if pop >= 40:
             forecast_message += "🌧 降水確率が40%以上です。傘☔の準備をお忘れなく！\n"
 
     forecast_message += f"この通知は{interval}時間ごとに繰り返されます。"
@@ -147,7 +147,48 @@ def stop_weather():
     send_line_notify("天気通知が停止されました。")
     return redirect(url_for('index'))
 
+
+
+rain_alert_stop_event = threading.Event()
+
+def start_rain_alert():
+    """雨が降る前の通知を開始"""
+    while not rain_alert_stop_event.is_set():
+        forecast = get_forecast_data()
+        if forecast:
+            # 次の予報データを確認 (3時間以内の予報)
+            for forecast_data in forecast['list'][:3]:
+                rain = forecast_data.get('rain', {}).get('3h', 0)
+                pop = forecast_data.get('pop', 0) * 100  # 降水確率をパーセントに変換
+                time_text = forecast_data['dt_txt']  # 時間情報
+                
+                # 降水確率50%以上、または降雨量が一定値以上の場合通知
+                if pop >= 50 or rain > 0:
+                    message = (
+                        f"雨の予報があります。\n"
+                        f"予想時間: {time_text}\n"
+                        f"降水確率: {pop:.1f}%\n"
+                        f"予想降雨量: {rain:.1f} mm\n"
+                        "傘を忘れずに！"
+                    )
+                    send_line_notify(message)
+                    break  # 一度通知したら次回まで待つ
+        
+        time.sleep(30 * 60)  # 30分ごとにチェック
+
+@app.route('/start-rain-alert', methods=['POST'])
+def start_rain_alert_route():
+    rain_alert_stop_event.clear()
+    threading.Thread(target=start_rain_alert).start()
+    send_line_notify("臨時雨通知が開始されました。\n雨の予報を監視中です。。")
+    return redirect(url_for('index'))
+
+@app.route('/stop-rain-alert', methods=['POST'])
+def stop_rain_alert():
+    rain_alert_stop_event.set()
+    send_line_notify("臨時雨通知が停止されました。")
+    return redirect(url_for('index'))
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
-
-
