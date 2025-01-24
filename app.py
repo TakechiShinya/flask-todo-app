@@ -33,11 +33,11 @@ def send_line_notify(message):
 def generate_hydration_message(temperature):
     """気温ごとの水分補給メッセージを作成"""
     if temperature >= 8:
-        return f"現在の気温は{temperature}度です。🥵🥵🥵熱中症に注意し、10分おきに水分補給をしてください！"
+        return f"現在の気温は{temperature}度です。🥵🥵🥵熱中症に注意し、10分.おきに水分補給をしてください！"
     elif temperature >= 7:
-        return f"現在の気温は{temperature}度です。15分おきに水分補給を心がけましょう。"
+        return f"現在の気温は{temperature}度です。15分.おきに水分補給を心がけましょう。"
     else:
-        return f"現在の気温は{temperature}度です。水分補給は20分おきに、コップ一杯以上(200ml~)を心がけましょう。\nこの通知は20分ごとに繰り返します。"
+        return f"現在の気温は{temperature}度です。水分補給は20分.おきに、コップ一杯以上(200ml~)を心がけましょう。\nこの通知は20分ごとに繰り返します。"
 
 def generate_weather_message(weather, forecast, interval):
     """現在、3時間後、6時間後の天気情報を含むメッセージを作成"""
